@@ -1,11 +1,14 @@
 import axios from 'axios';
 
+// In production (Vercel), VITE_API_BASE_URL points to the Render backend.
+// In development, it falls back to '/api' which is proxied by Vite to localhost:8080.
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
 
 // Request interceptor to attach JWT token
 api.interceptors.request.use(
