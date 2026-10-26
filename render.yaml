@@ -1,5 +1,13 @@
+databases:
+  # ─── Render MySQL Database ────────────────────────────────────────────────
+  - name: cirms-mysql
+    databaseName: cirms_db
+    user: cirms_user
+    plan: free
+    region: oregon
+
 services:
-  # ─── Spring Boot Backend ───────────────────────────────────────────────────
+  # ─── Spring Boot Backend ──────────────────────────────────────────────────
   - type: web
     name: cirms-backend
     runtime: docker
@@ -8,35 +16,50 @@ services:
     plan: free
     region: oregon
 
-    # Health check — Render will mark the service healthy once this returns 200
+    # Health check — Render marks service healthy once this returns 200
     healthCheckPath: /api/auth/status
 
-    # Environment variables — set secret values in the Render dashboard
     envVars:
       - key: PORT
         value: "8080"
 
-      # ── Aiven MySQL ──────────────────────────────────────────────────────────
+      # ── Render MySQL (auto-wired from the database above) ─────────────────
       - key: DATABASE_HOST
-        sync: false          # Set in dashboard
-      - key: DATABASE_PORT
-        sync: false
-      - key: DATABASE_NAME
-        sync: false
-      - key: DATABASE_USERNAME
-        sync: false
-      - key: DATABASE_PASSWORD
-        sync: false
-      - key: DB_USE_SSL
-        value: "true"        # Aiven requires SSL
+        fromDatabase:
+          name: cirms-mysql
+          property: host
 
-      # ── JWT ──────────────────────────────────────────────────────────────────
+      - key: DATABASE_PORT
+        fromDatabase:
+          name: cirms-mysql
+          property: port
+
+      - key: DATABASE_NAME
+        fromDatabase:
+          name: cirms-mysql
+          property: database
+
+      - key: DATABASE_USERNAME
+        fromDatabase:
+          name: cirms-mysql
+          property: user
+
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: cirms-mysql
+          property: password
+
+      # Render internal network — no SSL needed
+      - key: DB_USE_SSL
+        value: "false"
+
+      # ── JWT ───────────────────────────────────────────────────────────────
       - key: JWT_SECRET
-        sync: false
+        sync: false          # Set in Render dashboard
       - key: JWT_EXPIRATION_MS
         value: "86400000"
 
-      # ── Admin seed account ───────────────────────────────────────────────────
+      # ── Admin seed account ────────────────────────────────────────────────
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
@@ -44,12 +67,10 @@ services:
       - key: ADMIN_NAME
         value: "System Administrator"
 
-      # ── Cloudinary ───────────────────────────────────────────────────────────
+      # ── Cloudinary (image uploads) ────────────────────────────────────────
       - key: CLOUDINARY_URL
         sync: false
 
-      # ── CORS ─────────────────────────────────────────────────────────────────
-      # Set this to your Vercel frontend URL after deployment
-      # e.g. https://cirms.vercel.app,https://cirms-frontend.vercel.app
+      # ── CORS (set to your Vercel URL after frontend is deployed) ──────────
       - key: CORS_ALLOWED_ORIGINS
         sync: false
